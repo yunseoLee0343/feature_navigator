@@ -1,7 +1,4 @@
 library feature_navigator;
 
-/// A Calculator.
-class Calculator {
-  /// Returns [value] plus 1.
-  int addOne(int value) => value + 1;
-}
+export './feature_route.dart';
+export './feature_router_provider.dart';

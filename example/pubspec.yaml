@@ -37,6 +37,7 @@ dependencies:
 
   feature_navigator:
     path: ../
+  go_router: ^14.2.6
 
 dev_dependencies:
   flutter_test:
