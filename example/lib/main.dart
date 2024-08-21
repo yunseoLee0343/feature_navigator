@@ -25,6 +25,7 @@ class MyApp extends StatelessWidget {
               path: '/details',
               description: 'This is the details screen',
               builder: (context, state) => const DetailsScreen(),
+              includeChat: true,
             ),
           ],
         );
