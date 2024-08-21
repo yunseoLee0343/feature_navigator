@@ -2,6 +2,9 @@ import 'package:feature_navigator/chat_page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+List<FeatureRoute> _allRoutes = [];
+get allRoutes => _allRoutes;
+
 class FeatureRoute extends GoRoute {
   final String description;
   final bool includeChat;
@@ -34,5 +37,7 @@ class FeatureRoute extends GoRoute {
             }
             return child;
           },
-        );
+        ) {
+    _allRoutes.add(this);
+  }
 }
