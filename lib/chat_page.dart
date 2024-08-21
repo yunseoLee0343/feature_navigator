@@ -1,5 +1,8 @@
+import 'package:feature_navigator/gpt_model.dart';
+import 'package:feature_navigator/gpt_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 
 import 'feature_route.dart';
 import 'feature_router_provider.dart';
@@ -8,21 +11,45 @@ class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
 
   @override
-  _ChatPageState createState() => _ChatPageState();
+  ChatPageState createState() => ChatPageState();
 }
 
-class _ChatPageState extends State<ChatPage> {
+class ChatPageState extends State<ChatPage> {
   final TextEditingController _controller = TextEditingController();
-  final List<String> _messages = [];
-  final List<String> _responses = []; // List to hold responses
+  final List<Map<String, String>> _messages = [];
+  late GPTService _gptService;
 
-  // Local state update function for adding new message
-  void _sendMessage(String message) {
+  @override
+  void initState() {
+    super.initState();
+
+    final settings = FeatureSettings();
+    _gptService = GPTService(
+        settings.aiApiKey ?? '', settings.gptModel ?? GPTModel.gpt4oMini);
+  }
+
+  void _sendMessage() async {
+    final message = _controller.text;
+    if (message.isEmpty) return;
+
     setState(() {
-      _messages.add(message);
-      // Simulate a response based on the message
-      _responses.add('Response for "$message"'); // Replace with actual logic
+      _messages.add({'role': 'user', 'content': message});
     });
+    _controller.clear();
+
+    try {
+      final response = await _gptService.sendMessage(message);
+      setState(() {
+        _messages.add({'role': 'assistant', 'content': response});
+      });
+    } catch (e) {
+      setState(() {
+        _messages.add({
+          'role': 'assistant',
+          'content': 'Error: Could not fetch response from GPT. $e'
+        });
+      });
+    }
   }
 
   @override
@@ -31,7 +58,7 @@ class _ChatPageState extends State<ChatPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chat Page'),
+        title: const Text('GPT Chat'),
       ),
       endDrawer: Drawer(
         child: Padding(
@@ -70,80 +97,46 @@ class _ChatPageState extends State<ChatPage> {
           ),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  return ChatBubble(
-                    message: _messages[index],
-                    isUserMessage: true,
-                  );
-                },
-              ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final message = _messages[index];
+                return ListTile(
+                  title: Text(message['content']!),
+                  subtitle: Text(message['role'] == 'user' ? 'You' : 'GPT'),
+                  leading: message['role'] == 'assistant'
+                      ? const Icon(Icons.smart_toy)
+                      : null,
+                  trailing: message['role'] == 'user'
+                      ? const Icon(Icons.person)
+                      : null,
+                );
+              },
             ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      decoration: const InputDecoration(
-                        labelText: 'Enter your message',
-                      ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    decoration: const InputDecoration(
+                      hintText: 'Type your message...',
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.send),
-                    onPressed: () {
-                      final message = _controller.text;
-                      if (message.isNotEmpty) {
-                        _sendMessage(message);
-                        _controller.clear();
-                      }
-                    },
-                  ),
-                ],
-              ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.send),
+                  onPressed: _sendMessage,
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class ChatBubble extends StatelessWidget {
-  final String message;
-  final bool isUserMessage;
-
-  const ChatBubble({
-    super.key,
-    required this.message,
-    required this.isUserMessage,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: isUserMessage ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.all(10.0),
-        margin: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
-        decoration: BoxDecoration(
-          color: isUserMessage ? Colors.blue : Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(12.0),
-        ),
-        child: Text(
-          message,
-          style: TextStyle(
-            color: isUserMessage ? Colors.white : Colors.black,
           ),
-        ),
+        ],
       ),
     );
   }
