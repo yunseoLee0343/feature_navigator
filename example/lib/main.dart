@@ -14,18 +14,18 @@ class MyApp extends StatelessWidget {
   MyApp({super.key})
       : _router = FeatureRouter(
           useAI: true,
-          aiApiKey: 'user-gpt-api-key',
+          aiApiKey: 'your-api-key',
           routes: [
             FeatureRoute(
-              name: 'home',
+              name: '배달 화면',
               path: '/',
-              description: 'This is the home screen',
+              description: '배달 가능한 가게를 보여주는 화면 입니다.',
               builder: (context, state) => const HomeScreen(),
             ),
             FeatureRoute(
-              name: 'details',
+              name: '주문 화면',
               path: '/details',
-              description: 'This is the details screen',
+              description: '특정 가게에서 음식을 주문하는 화면 입니다.',
               builder: (context, state) => const DetailsScreen(),
               includeChat: true,
             ),

@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:feature_navigator/feature_route.dart';
+import 'package:feature_navigator/feature_router_provider.dart';
 import 'package:feature_navigator/gpt_model.dart';
 import 'package:http/http.dart' as http;
 
@@ -10,23 +12,33 @@ class GPTService {
   GPTService(this.apiKey, this.gptModel);
 
   Future<String> sendMessage(String message) async {
+    final routeInfoProvider = RouteInfoProvider(routes: allRoutes);
+    final systemMessage =
+        "You are a navigator that provides directions to the user. Please guide the user to the router that has the desired feature. [Router List] ${routeInfoProvider.getRoutesInfo()}. Please respond in the following format: [Response Format]: 찾으시는 기능이 [Page Name] 맞으신가요? [Page Path]";
+    print(systemMessage);
     final response = await http.post(
       Uri.parse('https://api.openai.com/v1/chat/completions'),
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json; charset=utf-8',
         'Authorization': 'Bearer $apiKey',
       },
       body: jsonEncode({
         'model': gptModel.modelName,
         'messages': [
-          {'role': 'system', 'content': 'You are a helpful assistant.'},
+          {
+            'role': 'system',
+            'content': systemMessage,
+          },
           {'role': 'user', 'content': message},
         ],
       }),
     );
 
+    print('Status code: ${response.statusCode}');
+    print('Response body: ${response.body}');
+
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
       return data['choices'][0]['message']['content'].trim();
     } else {
       throw Exception('Failed to communicate with GPT');
