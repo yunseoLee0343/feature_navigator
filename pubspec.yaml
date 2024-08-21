@@ -1,7 +1,7 @@
 name: feature_navigator
 description: "Navigator that detects feature of app."
 version: 0.0.1
-homepage:
+homepage: https://github.com/yunseoLee0343/feature_navigator
 
 environment:
   sdk: ">=3.4.4 <4.0.0"
