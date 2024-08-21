@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
 import 'chat_page.dart';
 import 'gpt_model.dart';
+
+List<FeatureRoute> _allRoutes = [];
+get allRoutes => _allRoutes;
 
 class FeatureRoute extends GoRoute {
   final String description;
@@ -40,5 +42,7 @@ class FeatureRoute extends GoRoute {
             }
             return child;
           },
-        );
+        ) {
+    _allRoutes.add(this);
+  }
 }
