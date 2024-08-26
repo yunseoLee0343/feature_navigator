@@ -23,4 +23,13 @@ class RouteInfoProvider {
 
     return 'Route "${route.name}" points to the path "${route.path}". Description: "${route.description}".';
   }
+
+  String getRoutePath(String routeName) {
+    final route = routes.firstWhere(
+      (route) => route.name == routeName,
+      orElse: () => throw Exception('Route not found'),
+    );
+
+    return route.path;
+  }
 }
