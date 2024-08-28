@@ -1,7 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import 'feature_route.dart';
-import 'gpt_model.dart';
+import 'model/gpt_model.dart';
 
 class FeatureRouter {
   final GoRouter _router;

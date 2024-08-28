@@ -21,7 +21,8 @@ class RouteInfoProvider {
       orElse: () => throw Exception('Route not found'),
     );
 
-    return 'Route "${route.name}" points to the path "${route.path}". Description: "${route.description}".';
+    // return 'Route "${route.name}" points to the path "${route.path}". Description: "${route.description}".';
+    return route.description;
   }
 
   String getRoutePath(String routeName) {

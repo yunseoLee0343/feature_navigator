@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'chat_page.dart';
-import 'gpt_model.dart';
+
+import 'model/gpt_model.dart';
+import 'view/chat_page.dart';
 
 List<FeatureRoute> _allRoutes = [];
 get allRoutes => _allRoutes;
