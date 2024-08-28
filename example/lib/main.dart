@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
   MyApp({super.key})
       : _router = FeatureRouter(
           useAI: true,
-          aiApiKey: 'your-api-key',
+          aiApiKey: 'api-key',
           routes: [
             FeatureRoute(
               name: '배달 화면',

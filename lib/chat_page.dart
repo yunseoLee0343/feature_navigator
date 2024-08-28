@@ -15,8 +15,16 @@ class ChatPage extends StatefulWidget {
 
 class ChatPageState extends State<ChatPage> {
   final TextEditingController _controller = TextEditingController();
-  final List<Map<String, String>> _messages = [];
+  final List<Map<String, String>> _messages = [
+    {
+      'role': 'assistant',
+      'content': '안녕하세요. Feature Navigator 도우미입니다. 무엇을 도와드릴까요?'
+    }
+  ];
   late GPTService _gptService;
+
+  bool isStartClicked = false;
+  bool isUserDeterminedPath = false;
 
   @override
   void initState() {
@@ -28,6 +36,14 @@ class ChatPageState extends State<ChatPage> {
   }
 
   void _sendMessage() async {
+    if (!isStartClicked) {
+      setState(() {
+        isStartClicked = true;
+      });
+
+      return;
+    }
+
     final message = _controller.text;
     if (message.isEmpty) return;
 
@@ -51,14 +67,45 @@ class ChatPageState extends State<ChatPage> {
     }
   }
 
+  List<Widget> _getButtons(List<String> contents) {
+    return !isStartClicked
+        ? [
+            ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    isStartClicked = true;
+                  });
+                },
+                child: const Text("시작"))
+          ]
+        : contents.map((content) {
+            return ElevatedButton(
+              onPressed: () {
+                _controller.text = content;
+                _sendMessage();
+                setState(() {
+                  isUserDeterminedPath = true;
+                });
+              },
+              child: Text(content),
+            );
+          }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final routeInfoProvider = RouteInfoProvider(routes: allRoutes);
+    final List<String> buttonContents = routeInfoProvider
+        .getRoutesInfo()
+        .map((routeInfo) => routeInfo['name']!)
+        .toList();
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('GPT Chat'),
+        backgroundColor: Colors.grey[200],
       ),
+      backgroundColor: Colors.white,
       endDrawer: Drawer(
         child: SafeArea(
           child: Padding(
@@ -99,41 +146,82 @@ class ChatPageState extends State<ChatPage> {
         ),
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(
             child: ListView.builder(
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
-                print(message);
+                print("message: $message");
+                String extracted = '';
                 String path = '';
 
                 if (message['role'] == 'assistant') {
+                  /*
                   int questionMarkIndex = message['content']!.indexOf('?');
                   path = message['content']!
                       .substring(questionMarkIndex + 1)
                       .trim();
+                  */
+                  final regExp = RegExp(r'찾으시는 기능이 (.*?) 맞으신가요\?');
+                  final match = regExp.firstMatch(message['content']!);
+
+                  if (match != null) {
+                    extracted = match.group(1)?.trim() ?? '';
+                    print("extracted: $extracted");
+                    path = routeInfoProvider.getRoutePath(extracted);
+                  } else {
+                    print('No match found.');
+                  }
+                } else if (isUserDeterminedPath) {
+                  path = message['content']!;
+                  isUserDeterminedPath = false;
                 }
 
                 print('Extracted Path: $path');
 
-                return ListTile(
-                  title: Text(message['content']!),
-                  subtitle: Text(message['role'] == 'user' ? 'You' : 'GPT'),
-                  leading: message['role'] == 'assistant'
-                      ? const Icon(Icons.smart_toy)
-                      : null,
-                  trailing: message['role'] == 'user'
-                      ? const Icon(Icons.person)
-                      : null,
-                  // If there's a path in the message, show a button
-                  onTap: path != ''
-                      ? () {
-                          context.push(path);
-                        }
-                      : null,
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ListTile(
+                      title: Text(message['content']!),
+                      subtitle: Text(message['role'] == 'user' ? 'You' : 'GPT'),
+                      leading: message['role'] == 'assistant'
+                          ? const Icon(Icons.smart_toy)
+                          : null,
+                      trailing: message['role'] == 'user'
+                          ? const Icon(Icons.person)
+                          : null,
+                      onTap: path.isNotEmpty
+                          ? () {
+                              context.push(path);
+                            }
+                          : null,
+                    ),
+                    if (path.isNotEmpty && message['role'] == 'assistant')
+                      Padding(
+                        padding:
+                            const EdgeInsets.only(left: 8, right: 8, bottom: 8),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            context.push(path);
+                          },
+                          child: Text("$extracted로 이동하기"),
+                        ),
+                      ),
+                  ],
                 );
               },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(
+              right: 32,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: _getButtons(buttonContents),
             ),
           ),
           Padding(
