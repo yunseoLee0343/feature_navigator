@@ -64,8 +64,12 @@ class ChatPageState extends State<ChatPage>
   }
 
   Future<void> _addDelayedMessage(String role, String content) async {
+    _setTyping(true);
+
     await Future.delayed(const Duration(seconds: 1));
     _addMessage(role, content);
+
+    _setTyping(false);
   }
 
   void _setChattingState(ChattingState state) {
@@ -131,7 +135,7 @@ class ChatPageState extends State<ChatPage>
           CustomBlueButton(
             onPressed: () {
               _addMessage('user', '시작');
-              _addMessage('assistant',
+              _addDelayedMessage('assistant',
                   '문의 내용을 선택해 주세요. \n처음으로 돌아오려면 ' '시작' '을 입력해주세요.');
               _setChattingState(ChattingState.listView);
             },
@@ -144,7 +148,7 @@ class ChatPageState extends State<ChatPage>
             onPressed: () {
               _controller.text = '$content에 대해서 알고 싶어요.';
               _sendMessage();
-              _addMessage('assistant',
+              _addDelayedMessage('assistant',
                   '해당 화면은 \n${routeInfoProvider.getRouteDescription(content)}');
               _setUserDeterminedPath();
               _setChattingState(ChattingState.detailView);
@@ -157,7 +161,7 @@ class ChatPageState extends State<ChatPage>
           CustomBlueButton(
             onPressed: () {
               _addMessage('user', '아니요. 도움이 필요합니다');
-              _addMessage(
+              _addDelayedMessage(
                   'assistant',
                   '추가적인 문의 사항은 메시지를 입력해서 요청해주세요. \n처음으로 돌아오려면 '
                       '시작'
