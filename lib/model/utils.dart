@@ -1,1 +1,1 @@
-enum ChattingState { initial, listView, detailView, reponsed }
+enum ChattingState { initial, listView, detailView, reponsed, showRoutes }

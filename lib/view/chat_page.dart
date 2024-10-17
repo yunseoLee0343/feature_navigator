@@ -19,18 +19,10 @@ class ChatPageState extends State<ChatPage>
     with SingleTickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-
-  final List<Map<String, String>> _messages = [
-    {
-      'role': 'assistant',
-      'content':
-          '안녕하세요. Feature Navigator 도우미입니다 😀 \n\n도움을 원하시는 경우, 아래 시작 버튼을 누르거나 채팅을 입력해주세요. \n\nAI가 제공하는 정보는 실제와 다를 수 있으니 참고용으로만 사용해주시기 바랍니다.'
-    }
-  ];
+  final List<Map<String, String>> _messages = [];
   late GPTService _gptService;
   late AnimationController _animationController;
   ChattingState _chatPageState = ChattingState.initial;
-  bool _isUserDeterminedPath = false;
   bool _isTyping = false;
 
   @override
@@ -47,6 +39,12 @@ class ChatPageState extends State<ChatPage>
       settings.aiApiKey ?? '',
       settings.gptModel ?? GPTModel.gpt4oMini,
     );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _setChattingState(ChattingState.listView);
+      _addMessage(
+          'assistant', '안녕하세요! 저는 원하는 기능들을 찾아주는 도우미에요. 궁금한 기능이 있으시면 물어봐주세요.');
+    });
   }
 
   @override
@@ -58,54 +56,69 @@ class ChatPageState extends State<ChatPage>
   }
 
   void _setTyping(bool typing) {
-    setState(() {
-      _isTyping = typing;
-    });
+    setState(() => _isTyping = typing);
   }
 
   Future<void> _addDelayedMessage(String role, String content) async {
     _setTyping(true);
-
     await Future.delayed(const Duration(seconds: 1));
     _addMessage(role, content);
-
     _setTyping(false);
   }
 
   void _setChattingState(ChattingState state) {
-    setState(() {
-      _chatPageState = state;
-    });
+    setState(() => _chatPageState = state);
   }
 
   void _sendMessage() async {
     final message = _controller.text;
-
     if (message.isEmpty) return;
+
+    final String currentRoute = GoRouter.of(context)
+        .routerDelegate
+        .currentConfiguration
+        .last
+        .matchedLocation
+        .toString();
 
     _addMessage('user', message);
     _controller.clear();
-
     _setTyping(true);
     await Future.delayed(const Duration(seconds: 1));
 
-    if (message == '시작') {
-      _addMessage(
-          'assistant', '문의 내용을 선택해 주세요. \n\n처음으로 돌아오려면 ' '시작' '을 입력해주세요.');
-      _setChattingState(ChattingState.listView);
+    final routeInfoProvider = RouteInfoProvider(routes: allRoutes);
 
-      _controller.clear();
-      _setTyping(false);
-      return;
+    switch (message) {
+      case '너는 무엇을 할 수 있어?':
+        _addMessage('assistant',
+            '질문에 맞추어 기능을 찾거나 화면으로 이동할 수 있어요. 또한 현재 화면상의 기능들에 대해서 설명도 하고 있습니다. 필요한 기능이 있으면 말씀해 주세요!');
+        break;
+      case '기능 전체를 보여줘':
+        _setChattingState(ChattingState.showRoutes);
+        break;
+      case '현재 화면에 대해서 설명해줘':
+        final routeDescription = routeInfoProvider.getRoutesInfo().firstWhere(
+              (route) => route['path'] == currentRoute,
+              orElse: () => {'description': '화면 설명을 찾을 수 없습니다.'},
+            )['description'];
+        _addMessage('assistant', '현재 화면은 $routeDescription');
+        break;
+      case '최근에 검색한 기능을 보여줘':
+        _addMessage('assistant', '다음은 최근에 검색한 기능들이에요. 다시 이용하고 싶은 기능이 있나요?');
+        break;
+      default:
+        try {
+          final response = await _gptService.sendMessage(message);
+          _addMessage('assistant', response);
+        } catch (e) {
+          _addMessage(
+              'assistant', 'Error: Could not fetch response from GPT. $e');
+        }
+        break;
     }
-
-    try {
-      final response = await _gptService.sendMessage(message);
-      _setTyping(false);
-      _addMessage('assistant', response);
-    } catch (e) {
-      _setTyping(false);
-      _addMessage('assistant', 'Error: Could not fetch response from GPT. $e');
+    _setTyping(false);
+    if (message != '기능 전체를 보여줘') {
+      _setChattingState(ChattingState.detailView);
     }
   }
 
@@ -113,7 +126,6 @@ class ChatPageState extends State<ChatPage>
     setState(() {
       _messages.add({'role': role, 'content': content});
     });
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
@@ -124,10 +136,12 @@ class ChatPageState extends State<ChatPage>
   }
 
   List<Widget> _buildActionButtons(RouteInfoProvider routeInfoProvider) {
-    final List<String> buttonContents = routeInfoProvider
-        .getRoutesInfo()
-        .map((routeInfo) => routeInfo['name']!)
-        .toList();
+    final initialButtonContents = [
+      '너는 무엇을 할 수 있어?',
+      '기능 전체를 보여줘',
+      '현재 화면에 대해서 설명해줘',
+      '최근에 검색한 기능을 보여줘'
+    ];
 
     switch (_chatPageState) {
       case ChattingState.initial:
@@ -135,53 +149,58 @@ class ChatPageState extends State<ChatPage>
           CustomBlueButton(
             onPressed: () {
               _addMessage('user', '시작');
-              _addDelayedMessage('assistant',
-                  '문의 내용을 선택해 주세요. \n처음으로 돌아오려면 ' '시작' '을 입력해주세요.');
               _setChattingState(ChattingState.listView);
             },
             text: "시작",
           ),
         ];
       case ChattingState.listView:
-        return buttonContents.map((content) {
+        return initialButtonContents
+            .map((content) => CustomBlueButton(
+                  onPressed: () {
+                    _controller.text = content;
+                    _sendMessage();
+                  },
+                  text: content,
+                ))
+            .toList()
+          ..add(
+            CustomBlueButton(
+              onPressed: () {
+                _setChattingState(ChattingState.listView);
+              },
+              text: "처음으로 돌아가기",
+            ),
+          );
+      case ChattingState.showRoutes:
+        return routeInfoProvider.getRoutesInfo().map((routeInfo) {
           return CustomBlueButton(
             onPressed: () {
-              _controller.text = '$content에 대해서 알고 싶어요.';
-              _sendMessage();
-              _addDelayedMessage('assistant',
-                  '해당 화면은 \n${routeInfoProvider.getRouteDescription(content)}');
-              _setUserDeterminedPath();
-              _setChattingState(ChattingState.detailView);
+              context.go(routeInfo['path']!);
             },
-            text: '$content에 대해서 알고 싶어요.',
+            text: routeInfo['name']!,
           );
-        }).toList();
+        }).toList()
+          ..add(
+            CustomBlueButton(
+              onPressed: () {
+                _setChattingState(ChattingState.listView);
+              },
+              text: "처음으로 돌아가기",
+            ),
+          );
       case ChattingState.detailView:
         return [
           CustomBlueButton(
             onPressed: () {
-              _addMessage('user', '아니요. 도움이 필요합니다');
-              _addDelayedMessage(
-                  'assistant',
-                  '추가적인 문의 사항은 메시지를 입력해서 요청해주세요. \n처음으로 돌아오려면 '
-                      '시작'
-                      '을 입력해주세요.');
-              _setChattingState(ChattingState.reponsed);
+              _setChattingState(ChattingState.listView);
             },
-            text: "아니요. 도움이 필요합니다",
+            text: "처음으로 돌아가기",
           ),
         ];
-      case ChattingState.reponsed:
-        return [];
       default:
         return [];
     }
-  }
-
-  void _setUserDeterminedPath() {
-    setState(() {
-      _isUserDeterminedPath = true;
-    });
   }
 
   @override
@@ -199,7 +218,7 @@ class ChatPageState extends State<ChatPage>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(
-            child: _buildMessageList(routeInfoProvider),
+            child: _buildMessageList(),
           ),
           if (_isTyping) _buildTypingIndicator(),
           Padding(
@@ -220,30 +239,29 @@ class ChatPageState extends State<ChatPage>
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          for (int i = 0; i < 3; i++)
-            AnimatedBuilder(
-              animation: _animationController,
-              builder: (context, child) {
-                double scale = 1.0 +
-                    0.3 *
-                        (1.0 - (_animationController.value - i / 3).abs())
-                            .clamp(0.0, 1.0);
-                return Transform.scale(
-                  scale: scale,
-                  child: Container(
-                    width: 12.0,
-                    height: 12.0,
-                    margin: EdgeInsets.only(right: i < 2 ? 6.0 : 0.0),
-                    decoration: const BoxDecoration(
-                      color: Colors.grey,
-                      shape: BoxShape.circle,
-                    ),
+        children: List.generate(3, (i) {
+          return AnimatedBuilder(
+            animation: _animationController,
+            builder: (context, child) {
+              double scale = 1.0 +
+                  0.3 *
+                      (1.0 - (_animationController.value - i / 3).abs())
+                          .clamp(0.0, 1.0);
+              return Transform.scale(
+                scale: scale,
+                child: Container(
+                  width: 12.0,
+                  height: 12.0,
+                  margin: EdgeInsets.only(right: i < 2 ? 6.0 : 0.0),
+                  decoration: const BoxDecoration(
+                    color: Colors.grey,
+                    shape: BoxShape.circle,
                   ),
-                );
-              },
-            ),
-        ],
+                ),
+              );
+            },
+          );
+        }),
       ),
     );
   }
@@ -275,14 +293,12 @@ class ChatPageState extends State<ChatPage>
     );
   }
 
-  Widget _buildMessageList(RouteInfoProvider routeInfoProvider) {
+  Widget _buildMessageList() {
     return ListView.builder(
       controller: _scrollController,
       itemCount: _messages.length,
       itemBuilder: (context, index) {
         final message = _messages[index];
-        final path = _extractPath(message, routeInfoProvider);
-        final match = _extractMatch(message, routeInfoProvider);
         final isUser = message['role'] == 'user';
 
         return Column(
@@ -314,57 +330,10 @@ class ChatPageState extends State<ChatPage>
                 ),
               ),
             ),
-            if (path.isNotEmpty && !isUser)
-              Padding(
-                padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
-                child: CustomBlueButton(
-                  isOutlined: false,
-                  onPressed: () {
-                    context.go(path);
-                  },
-                  text: "$match로 이동하기",
-                ),
-              ),
           ],
         );
       },
     );
-  }
-
-  String _extractPath(
-      Map<String, String> message, RouteInfoProvider routeInfoProvider) {
-    if (message['role'] == 'assistant') {
-      final regExp = RegExp(r'찾으시는 기능이 (.*?) 맞으신가요\?');
-
-      final match = regExp.firstMatch(message['content']!);
-
-      if (match != null) {
-        final extracted = match.group(1)?.trim() ?? '';
-        return routeInfoProvider.getRoutePath(extracted);
-      }
-    } else if (_isUserDeterminedPath) {
-      _isUserDeterminedPath = false;
-      return message['content']!;
-    }
-    return '';
-  }
-
-  String _extractMatch(
-      Map<String, String> message, RouteInfoProvider routeInfoProvider) {
-    if (message['role'] == 'assistant') {
-      final regExp = RegExp(r'찾으시는 기능이 (.*?) 맞으신가요\?');
-
-      final match = regExp.firstMatch(message['content']!);
-
-      if (match != null) {
-        final extracted = match.group(1)?.trim() ?? '';
-        return extracted;
-      }
-    } else if (_isUserDeterminedPath) {
-      _isUserDeterminedPath = false;
-      return message['content']!;
-    }
-    return '';
   }
 
   Widget _buildInputArea() {
@@ -378,9 +347,7 @@ class ChatPageState extends State<ChatPage>
               decoration: const InputDecoration(
                 hintText: '메시지 입력',
               ),
-              onSubmitted: (value) {
-                _sendMessage();
-              },
+              onSubmitted: (_) => _sendMessage(),
             ),
           ),
         ],
