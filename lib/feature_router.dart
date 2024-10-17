@@ -7,16 +7,12 @@ class FeatureRouter {
   final GoRouter _router;
 
   FeatureRouter({
-    required bool useAI,
-    String? aiApiKey,
     GPTModel? gptModel,
+    String? apiKey,
     required List<FeatureRoute> routes,
-  }) : _router = GoRouter(
-          routes: routes,
-        ) {
+  }) : _router = GoRouter(routes: routes) {
     FeatureSettings().configure(
-      useAI: useAI,
-      aiApiKey: aiApiKey,
+      aiApiKey: apiKey,
       gptModel: gptModel,
     );
   }
