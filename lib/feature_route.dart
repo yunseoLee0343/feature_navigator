@@ -1,8 +1,8 @@
+import 'package:feature_navigator/view/chat_page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'model/gpt_model.dart';
-import 'view/chat_page.dart';
 
 List<FeatureRoute> _allRoutes = [];
 get allRoutes => _allRoutes;
@@ -15,7 +15,7 @@ class FeatureRoute extends GoRoute {
     required this.description,
     required super.path,
     required Widget Function(BuildContext, GoRouterState) builder,
-    this.includeChat = false,
+    this.includeChat = true,
     super.name,
     super.pageBuilder,
     super.redirect,
@@ -25,20 +25,25 @@ class FeatureRoute extends GoRoute {
             final child = builder(context, state);
             final settings = FeatureSettings();
 
-            if (includeChat && settings.useAI) {
-              return Scaffold(
-                body: child,
-                floatingActionButton: FloatingActionButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ChatPage(),
-                      ),
-                    );
-                  },
-                  child: const Icon(Icons.chat),
-                ),
+            if (includeChat && settings.aiApiKey != null) {
+              return Stack(
+                children: [
+                  child,
+                  Positioned(
+                    right: 24.0,
+                    bottom: 40.0,
+                    child: FloatingActionButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const ChatPage()),
+                        );
+                      },
+                      child: const Icon(Icons.chat),
+                    ),
+                  ),
+                ],
               );
             }
             return child;
