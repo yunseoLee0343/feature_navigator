@@ -1,4 +1,4 @@
-import 'package:feature_navigator/feature_route.dart';
+import 'package:feature_navigator/feature_router.dart';
 
 class RouteInfoProvider {
   final List<FeatureRoute> routes;

@@ -5,7 +5,7 @@ import 'package:feature_navigator/provider/gpt_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../feature_route.dart';
+import '../feature_router.dart';
 import '../provider/feature_router_provider.dart';
 
 class ChatPage extends StatefulWidget {
@@ -24,6 +24,9 @@ class ChatPageState extends State<ChatPage>
   late AnimationController _animationController;
   ChattingState _chatPageState = ChattingState.initial;
   bool _isTyping = false;
+
+  int _currentPage = 0;
+  final int _buttonsPerPage = 5;
 
   @override
   void initState() {
@@ -59,13 +62,6 @@ class ChatPageState extends State<ChatPage>
     setState(() => _isTyping = typing);
   }
 
-  Future<void> _addDelayedMessage(String role, String content) async {
-    _setTyping(true);
-    await Future.delayed(const Duration(seconds: 1));
-    _addMessage(role, content);
-    _setTyping(false);
-  }
-
   void _setChattingState(ChattingState state) {
     setState(() => _chatPageState = state);
   }
@@ -91,20 +87,20 @@ class ChatPageState extends State<ChatPage>
     switch (message) {
       case '너는 무엇을 할 수 있어?':
         _addMessage('assistant',
-            '질문에 맞추어 기능을 찾거나 화면으로 이동할 수 있어요. 또한 현재 화면상의 기능들에 대해서 설명도 하고 있습니다. 필요한 기능이 있으면 말씀해 주세요!');
+            '저는 사용자의 질문을 듣고 그에 맞는 화면으로 이동을 도와드리고 있어요. 또한, 화면에 대해 모르는 부분도 알려드리고 있습니다.');
         break;
-      case '기능 전체를 보여줘':
+      case '화면 목록을 보여줘':
         _setChattingState(ChattingState.showRoutes);
         break;
-      case '현재 화면에 대해서 설명해줘':
+      case '이전 화면에 대해서 설명해줘':
         final routeDescription = routeInfoProvider.getRoutesInfo().firstWhere(
               (route) => route['path'] == currentRoute,
               orElse: () => {'description': '화면 설명을 찾을 수 없습니다.'},
             )['description'];
         _addMessage('assistant', '현재 화면은 $routeDescription');
         break;
-      case '최근에 검색한 기능을 보여줘':
-        _addMessage('assistant', '다음은 최근에 검색한 기능들이에요. 다시 이용하고 싶은 기능이 있나요?');
+      case '최근에 검색한 화면을 보여줘':
+        _addMessage('assistant', '다음은 최근에 검색한 화면들이에요. 다시 이동하고 싶은 화면이 있나요?');
         break;
       default:
         try {
@@ -117,7 +113,7 @@ class ChatPageState extends State<ChatPage>
         break;
     }
     _setTyping(false);
-    if (message != '기능 전체를 보여줘') {
+    if (message != '화면 목록을 보여줘') {
       _setChattingState(ChattingState.detailView);
     }
   }
@@ -138,9 +134,9 @@ class ChatPageState extends State<ChatPage>
   List<Widget> _buildActionButtons(RouteInfoProvider routeInfoProvider) {
     final initialButtonContents = [
       '너는 무엇을 할 수 있어?',
-      '기능 전체를 보여줘',
-      '현재 화면에 대해서 설명해줘',
-      '최근에 검색한 기능을 보여줘'
+      '화면 목록을 보여줘',
+      '이전 화면에 대해서 설명해줘',
+      '최근에 검색한 화면을 보여줘'
     ];
 
     switch (_chatPageState) {
@@ -163,32 +159,67 @@ class ChatPageState extends State<ChatPage>
                   },
                   text: content,
                 ))
-            .toList()
-          ..add(
-            CustomBlueButton(
-              onPressed: () {
-                _setChattingState(ChattingState.listView);
-              },
-              text: "처음으로 돌아가기",
-            ),
-          );
+            .toList();
       case ChattingState.showRoutes:
-        return routeInfoProvider.getRoutesInfo().map((routeInfo) {
+        // 전체 Route 정보 리스트
+        final routeInfos = routeInfoProvider.getRoutesInfo();
+
+        // 현재 페이지에 해당하는 Route 정보만 가져오기
+        final startIndex = _currentPage * _buttonsPerPage;
+        final endIndex = (_currentPage + 1) * _buttonsPerPage;
+        final currentRoutes = routeInfos.sublist(
+          startIndex,
+          endIndex > routeInfos.length ? routeInfos.length : endIndex,
+        );
+
+        // 현재 페이지의 버튼들 생성
+        final buttons = currentRoutes.map((routeInfo) {
           return CustomBlueButton(
             onPressed: () {
               context.go(routeInfo['path']!);
             },
             text: routeInfo['name']!,
           );
-        }).toList()
-          ..add(
+        }).toList();
+
+        // 페이지 네비게이션 버튼 추가
+        if (_currentPage > 0) {
+          buttons.add(
             CustomBlueButton(
               onPressed: () {
-                _setChattingState(ChattingState.listView);
+                setState(() {
+                  _currentPage--;
+                });
               },
-              text: "처음으로 돌아가기",
+              text: "이전 페이지",
             ),
           );
+        }
+        if (endIndex < routeInfos.length) {
+          buttons.add(
+            CustomBlueButton(
+              onPressed: () {
+                setState(() {
+                  _currentPage++;
+                });
+              },
+              text: "다음 페이지",
+            ),
+          );
+        }
+
+        // 처음으로 돌아가기 버튼 추가
+        buttons.add(
+          CustomBlueButton(
+            onPressed: () {
+              _setChattingState(ChattingState.listView);
+              _currentPage = 0; // 페이지를 초기화
+            },
+            text: "처음으로 돌아가기",
+          ),
+        );
+
+        return buttons;
       case ChattingState.detailView:
         return [
           CustomBlueButton(

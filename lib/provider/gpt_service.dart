@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:feature_navigator/feature_route.dart';
+import 'package:feature_navigator/feature_router.dart';
 import 'package:feature_navigator/model/gpt_model.dart';
 import 'package:feature_navigator/provider/feature_router_provider.dart';
 import 'package:http/http.dart' as http;
