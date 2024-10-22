@@ -68,6 +68,11 @@ class AccountManagementScreen extends StatelessWidget {
               onPressed: () => context.go('/account_management/investments'),
               child: const Text('Manage Investments'),
             ),
+            ElevatedButton(
+              onPressed: () =>
+                  context.go('/account_management/restricted_page'),
+              child: const Text('Restricted Page'),
+            ),
           ],
         ),
       ),
@@ -301,6 +306,29 @@ class InvestmentsScreen extends StatelessWidget {
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             Text('Manage your investments'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class RestrictedScreen extends StatelessWidget {
+  const RestrictedScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Restricted')),
+      body: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Restricted Screen',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            Text('Only can access with Button Not navigator'),
           ],
         ),
       ),

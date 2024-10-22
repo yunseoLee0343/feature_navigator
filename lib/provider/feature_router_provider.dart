@@ -35,19 +35,21 @@ class RouteDataProvider {
         if (route.routes.isNotEmpty) {
           _traverseRoutes(route.routes, path, routeDataMap);
         }
-      } else if (route is GoRoute) {
-        final path = _combinePaths(parentPath, route.path);
-        if (route.name != null) {
-          routeDataMap[route.name!] = FeatureRouteData(
-            name: route.name!,
-            description: '', // Provide a default or handle accordingly
-            fullPath: path,
-          );
-        }
-        if (route.routes.isNotEmpty) {
-          _traverseRoutes(route.routes, path, routeDataMap);
-        }
-      } else if (route is ShellRoute) {
+      }
+      // else if (route is GoRoute) {
+      //   final path = _combinePaths(parentPath, route.path);
+      //   if (route.name != null) {
+      //     routeDataMap[route.name!] = FeatureRouteData(
+      //       name: route.name!,
+      //       description: '', // Provide a default or handle accordingly
+      //       fullPath: path,
+      //     );
+      //   }
+      //   if (route.routes.isNotEmpty) {
+      //     _traverseRoutes(route.routes, path, routeDataMap);
+      //   }
+      // }
+      else if (route is ShellRoute) {
         // For ShellRoute, path is the same as parentPath
         if (route.routes.isNotEmpty) {
           _traverseRoutes(route.routes, parentPath, routeDataMap);
