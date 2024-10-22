@@ -1,3 +1,4 @@
+import 'package:feature_navigator/provider/feature_router_provider.dart';
 import 'package:feature_navigator/view/chat_page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -62,13 +63,13 @@ class FeatureRouter {
     GPTModel? gptModel,
     String? apiKey,
   }) : _router = goRouter {
-    // Custom setup for FeatureRouter
     FeatureSettings().configure(
       aiApiKey: apiKey,
       gptModel: gptModel,
     );
+
+    RouteDataProvider.initializeRoutes(_router.configuration.routes);
   }
 
-  // Expose the internal GoRouter instance
   GoRouter get router => _router;
 }
