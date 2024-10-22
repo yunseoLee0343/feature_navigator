@@ -2,6 +2,7 @@ import 'package:feature_navigator/component/custom_button.dart';
 import 'package:feature_navigator/model/gpt_model.dart';
 import 'package:feature_navigator/model/utils.dart';
 import 'package:feature_navigator/provider/gpt_service.dart';
+import 'package:feature_navigator/provider/search_history.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -94,8 +95,21 @@ class ChatPageState extends State<ChatPage>
         break;
       default:
         try {
-          final response = await _gptService.sendMessage(message);
-          _addMessage('assistant', response);
+          final result = await _gptService.sendMessage(message);
+
+          final assistantMessage = result['message'] as String;
+          final found = result['found'] as bool;
+          final routeName = result['route_name'] as String?;
+
+          String? path;
+          if (found && routeName != null) {
+            path = RouteDataProvider.getFullPath(routeName);
+          }
+
+          _addMessage('assistant', assistantMessage);
+          if (path != null) _addMessage('link', path);
+
+          await SearchHistoryService.saveSearch(message, '/screens');
         } catch (e) {
           _addMessage(
               'assistant', 'Error: Could not fetch response from GPT. $e');
@@ -129,16 +143,6 @@ class ChatPageState extends State<ChatPage>
     ];
 
     switch (_chatPageState) {
-      case ChattingState.initial:
-        return [
-          CustomBlueButton(
-            onPressed: () {
-              _addMessage('user', 'Start');
-              _setChattingState(ChattingState.listView);
-            },
-            text: "Start",
-          ),
-        ];
       case ChattingState.listView:
         return initialButtonContents
             .map((content) => CustomBlueButton(
@@ -256,33 +260,58 @@ class ChatPageState extends State<ChatPage>
       itemBuilder: (context, index) {
         final message = _messages[index];
         final isUser = message['role'] == 'user';
+        final isLink = message['role'] == 'link';
 
         return Column(
           crossAxisAlignment:
               isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-              margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.7,
-              ),
-              decoration: BoxDecoration(
-                color:
-                    isUser ? const Color(0xFFDFEAFF) : const Color(0xFFF4F4F4),
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
-                  bottomLeft: isUser ? const Radius.circular(16) : Radius.zero,
-                  bottomRight: isUser ? Radius.zero : const Radius.circular(16),
+            GestureDetector(
+              onTap: () {
+                final String currentRoute = GoRouter.of(context)
+                    .routerDelegate
+                    .currentConfiguration
+                    .last
+                    .matchedLocation
+                    .toString();
+
+                if (isLink) context.go(message['content']!);
+                if (currentRoute == message['content']!) Navigator.pop(context);
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                margin:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.7,
                 ),
-              ),
-              child: Text(
-                message['content']!,
-                style: TextStyle(
-                  color: isUser ? const Color(0xFF1777E9) : Colors.black87,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+                decoration: BoxDecoration(
+                  color: isUser
+                      ? const Color(0xFFDFEAFF)
+                      : isLink
+                          ? const Color(0xFF1777E9)
+                          : const Color(0xFFF4F4F4),
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(16),
+                    topRight: const Radius.circular(16),
+                    bottomLeft:
+                        isUser ? const Radius.circular(16) : Radius.zero,
+                    bottomRight:
+                        isUser ? Radius.zero : const Radius.circular(16),
+                  ),
+                ),
+                child: Text(
+                  isLink ? "Go to screen" : message['content']!,
+                  style: TextStyle(
+                    color: isUser
+                        ? const Color(0xFF1777E9)
+                        : isLink
+                            ? const Color(0xFFDFEAFF)
+                            : Colors.black87,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ),

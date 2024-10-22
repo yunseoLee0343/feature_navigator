@@ -2,6 +2,7 @@
 
 enum GPTModel {
   gpt4o('gpt-4o'),
+  gpt4('gpt-4'),
   gpt4oMini('gpt-4o-mini');
 
   final String modelName;
@@ -13,7 +14,7 @@ class FeatureSettings {
   static final FeatureSettings _instance = FeatureSettings._internal();
 
   String? aiApiKey;
-  GPTModel? gptModel = GPTModel.gpt4oMini;
+  GPTModel? gptModel = GPTModel.gpt4o;
 
   factory FeatureSettings() {
     return _instance;
