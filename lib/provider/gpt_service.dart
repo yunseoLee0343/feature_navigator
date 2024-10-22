@@ -14,7 +14,8 @@ class GPTService {
     String systemMessage = """
 You are a helpful navigation assistant for a mobile app. Based on the user's input and the available screens, suggest the most appropriate screen. If the user's request doesn't match any available screen, provide a friendly message explaining that you couldn't find a matching screen, possible reasons why, and ask the user if they could rephrase or provide more details.
 
-Available screens: ${RouteDataProvider.getAllRouteNames()}
+Available screens: ${RouteDataProvider.getAllRouteNames().map((name) => "- $name: ${RouteDataProvider.getRouteDescription(name)}").join("\n")}
+
 
 Please respond in the following JSON format:
 
@@ -27,7 +28,7 @@ Please respond in the following JSON format:
 If a screen is found:
 - Set "found" to true.
 - Provide the "route_name".
-- Include a message like "I found the [route_name] screen for you."
+- Include a message like "I found the [route_name] screen for you. This Screen is [Route Description]"
 
 If no matching screen is found:
 - Set "found" to false.
