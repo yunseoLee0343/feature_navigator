@@ -1,45 +1,52 @@
-// lib/provider/search_history_service.dart
-
-import 'dart:convert';
+// lib/provider/chat_history_service.dart
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-class SearchHistoryService {
-  static const String _searchHistoryKey = 'search_history';
+class ChatHistoryService {
+  static const String _chatMessagesKey = 'chat_messages';
+  static const int _maxMessages = 5;
 
-  /// Saves a search message and its corresponding path to SharedPreferences.
+  /// Saves a single chat message to SharedPreferences.
   ///
-  /// The [message] is used as the key, and the [path] is the value.
-  static Future<void> saveSearch(String message, String path) async {
+  /// - If the message already exists, it removes the old instance.
+  /// - If there are already five messages, it removes the oldest one.
+  /// - The new message is added to the beginning of the list.
+  static Future<void> saveMessage(String message) async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Retrieve existing search history as a JSON string
-    final String? searchHistoryJson = prefs.getString(_searchHistoryKey);
-    Map<String, String> searchHistory = {};
+    // Retrieve existing messages
+    List<String> messages = prefs.getStringList(_chatMessagesKey) ?? [];
 
-    if (searchHistoryJson != null) {
-      // Decode the JSON string to a Map
-      try {
-        final decoded = json.decode(searchHistoryJson);
-        // Ensure that the decoded JSON is a Map<String, dynamic>
-        if (decoded is Map<String, dynamic>) {
-          // Convert Map<String, dynamic> to Map<String, String>
-          searchHistory =
-              decoded.map((key, value) => MapEntry(key, value.toString()));
-        }
-      } catch (e) {
-        // If decoding fails, initialize an empty map
-        searchHistory = {};
-      }
+    // Remove the message if it already exists to prevent duplicates
+    messages.remove(message);
+
+    // Add the new message to the beginning
+    messages.insert(0, message);
+
+    // Ensure only the latest five messages are kept
+    if (messages.length > _maxMessages) {
+      messages = messages.sublist(0, _maxMessages);
     }
 
-    // Add the new search entry
-    searchHistory[message] = path;
+    // Save the updated list back to SharedPreferences
+    await prefs.setStringList(_chatMessagesKey, messages);
+  }
 
-    // Encode the updated map back to JSON
-    final String updatedSearchHistoryJson = json.encode(searchHistory);
+  /// Loads the list of saved chat messages from SharedPreferences.
+  ///
+  /// Returns a list of messages, ordered from newest to oldest.
+  static Future<List<String>> loadMessages() async {
+    final prefs = await SharedPreferences.getInstance();
 
-    // Save the updated JSON string to SharedPreferences
-    await prefs.setString(_searchHistoryKey, updatedSearchHistoryJson);
+    // Retrieve existing messages
+    List<String> messages = prefs.getStringList(_chatMessagesKey) ?? [];
+
+    return messages;
+  }
+
+  /// Clears all saved chat messages from SharedPreferences.
+  static Future<void> clearChatHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_chatMessagesKey);
   }
 }

@@ -22,8 +22,10 @@ class ChatPageState extends State<ChatPage>
   final List<Map<String, String>> _messages = [];
   late GPTService _gptService;
   late AnimationController _animationController;
-  ChattingState _chatPageState = ChattingState.initial;
+  ChattingState _chatPageState = ChattingState.listView;
   bool _isTyping = false;
+
+  List<String> _savedChatMessages = [];
 
   @override
   void initState() {
@@ -44,6 +46,14 @@ class ChatPageState extends State<ChatPage>
       _setChattingState(ChattingState.listView);
       _addMessage('assistant',
           'Hello! I\'m an assistant that helps you find the features you want. If you have any questions about features, please ask me.');
+      _loadSavedChatMessages();
+    });
+  }
+
+  void _loadSavedChatMessages() async {
+    List<String> messages = await ChatHistoryService.loadMessages();
+    setState(() {
+      _savedChatMessages = messages;
     });
   }
 
@@ -84,14 +94,20 @@ class ChatPageState extends State<ChatPage>
       case 'What can you do?':
         _addMessage('assistant',
             'I listen to your questions and help navigate to the appropriate screen. Also, I provide information about any parts of the screen you don\'t know.');
+        _setChattingState(ChattingState.detailView);
+
         break;
       case 'Explain the previous screen':
         _addMessage('assistant',
             'The current screen is ${RouteDataProvider.getRouteDescription(currentRoute)}');
+        _setChattingState(ChattingState.detailView);
+
         break;
       case 'Show me the screens I recently searched':
         _addMessage('assistant',
             'Here are the screens you recently searched. Is there any screen you want to go back to?');
+        _setChattingState(ChattingState.showHistory);
+
         break;
       default:
         try {
@@ -109,7 +125,8 @@ class ChatPageState extends State<ChatPage>
           _addMessage('assistant', assistantMessage);
           if (path != null) _addMessage('link', path);
 
-          await SearchHistoryService.saveSearch(message, '/screens');
+          await ChatHistoryService.saveMessage(message);
+          _loadSavedChatMessages();
         } catch (e) {
           _addMessage(
               'assistant', 'Error: Could not fetch response from GPT. $e');
@@ -117,9 +134,6 @@ class ChatPageState extends State<ChatPage>
         break;
     }
     _setTyping(false);
-    if (message != 'Show me the list of screens') {
-      _setChattingState(ChattingState.detailView);
-    }
   }
 
   void _addMessage(String role, String content) {
@@ -153,9 +167,28 @@ class ChatPageState extends State<ChatPage>
                   text: content,
                 ))
             .toList();
+      case ChattingState.showHistory:
+        return [
+          ..._savedChatMessages.map((content) => CustomBlueButton(
+                onPressed: () {
+                  _controller.text = content;
+                  _sendMessage();
+                },
+                text: content,
+              )),
+          CustomBlueButton(
+            isOutlined: false,
+            onPressed: () {
+              _setChattingState(ChattingState.listView);
+            },
+            text: "Go back to the beginning",
+          ),
+        ];
+
       case ChattingState.detailView:
         return [
           CustomBlueButton(
+            isOutlined: false,
             onPressed: () {
               _setChattingState(ChattingState.listView);
             },
