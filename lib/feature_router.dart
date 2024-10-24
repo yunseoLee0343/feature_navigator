@@ -11,9 +11,11 @@ get allRoutes => _allRoutes;
 class FeatureRoute extends GoRoute {
   final String description;
   final bool includeChat;
+  final Map<String, dynamic> parameters;
 
   FeatureRoute({
     required this.description,
+    this.parameters = const {},
     required super.path,
     required Widget Function(BuildContext, GoRouterState) builder,
     required super.name,
