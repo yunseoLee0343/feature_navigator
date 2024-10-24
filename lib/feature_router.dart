@@ -62,8 +62,8 @@ class FeatureRouter {
 
   FeatureRouter({
     required GoRouter goRouter,
+    required String apiKey,
     GPTModel? gptModel,
-    String? apiKey,
   }) : _router = goRouter {
     FeatureSettings().configure(
       aiApiKey: apiKey,

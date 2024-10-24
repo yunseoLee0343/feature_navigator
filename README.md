@@ -8,10 +8,11 @@
 
 - **Easy Integration**: Seamlessly integrate with your existing Flutter app using `go_router`.
 - **ChatBot Interface**: Allows users to search for app functionalities via a chatbot.
-- **Extended Routing**: Use `FeatureRoute` to add `name` and `description` to your routes.
+- **Extended Routing**: Use `FeatureRoute` to add `name`, `description`, and control chat appearance with `includeChat`.
 - **Nested Routing Support**: Supports nested routes and `StatefulShellRoute`.
 - **Dynamic Routing**: Easily handle dynamic routes with path parameters.
 - **GPT Model Selection**: Optionally choose GPT models, with `gpt-4o-mini` as the default.
+- **Control Chat Visibility**: Use `includeChat` in `FeatureRoute` to show or hide the chat on specific pages.
 - **Fallback Compatibility**: Compatible with `GoRoute`; you can mix `GoRoute` and `FeatureRoute`.
 
 ## Installation
@@ -31,7 +32,7 @@ In your `main.dart` or wherever you set up your router, declare the `FeatureRout
 ```dart
 FeatureRouter(
   goRouter: router,
-  apiKey: 'your-gpt-api-key', 
+  apiKey: 'your-gpt-api-key',
   gptModel: GPTModel.gpt4oMini, // Optional, defaults to gpt-4o-mini
 );
 ```
@@ -58,7 +59,7 @@ Set the `gptModel` parameter when initializing `FeatureRouter`:
 FeatureRouter(
   goRouter: router,
   apiKey: 'your-gpt-api-key',
-  gptModel: GPTModel.gpt4, // Optional, Choose the desired model
+  gptModel: GPTModel.gpt4, // Choose the desired model
 );
 ```
 
@@ -84,6 +85,17 @@ final GoRouter router = GoRouter(
 
 - When using `FeatureRoute`, you **must** provide the `name` and `description` parameters.
 - `FeatureRoute` supports nested routing and `StatefulShellRoute`.
+- **Control Chat Visibility**: Use the `includeChat` parameter to show or hide the chat on specific pages. The default value is `true`.
+
+```dart
+FeatureRoute(
+  name: 'settings',
+  description: 'User settings page',
+  path: '/settings',
+  includeChat: false, // Chat Button will not appear on this page
+  builder: (context, state) => const SettingsPage(),
+),
+```
 
 ### 3. Dynamic Routing with Path Parameters
 
@@ -145,8 +157,8 @@ routes: [
     // ... FeatureRoute definitions ...
   ),
   GoRoute(
-    path: '/settings',
-    builder: (context, state) => const SettingsPage(),
+    path: '/help',
+    builder: (context, state) => const HelpPage(),
   ),
 ],
 ```
@@ -155,14 +167,15 @@ routes: [
 
 - **ChatBot Accessibility**: The chatbot in `Feature Navigator` can only access routes defined with `FeatureRoute`. Routes defined with `GoRoute` will not be accessible via the chatbot interface.
 - **Compatibility**: Since `FeatureRoute` extends `GoRoute`, you can use both in your application without any issues.
+- **Chat Visibility Control**: Use `includeChat: false` in `FeatureRoute` to hide the chat on specific pages.
 
 ## Developers
 
-- [@yunseoLee0343](https://github.com/yunseoLee0343)
-- [@hin6150](https://github.com/hin6150)
+| [![Developer 1](https://avatars.githubusercontent.com/u/117894155?v=4?s=150)](https://github.com/yunseoLee0343) | [![Developer 2](https://avatars.githubusercontent.com/u/3265750?v=4?s=150)](https://github.com/hin6150) |
+| :-------------------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------: |
+|                         [@yunseoLee0343](https://github.com/yunseoLee0343)                         |                         [@hin6150](https://github.com/hin6150)                         |
 
-![Developer 1](https://avatars.githubusercontent.com/u/117894155?v=4)
-![Developer 2](https://avatars.githubusercontent.com/u/3265750?v=4)
+*Note: The images are resized to maintain appropriate dimensions. Replace `?s=150` with the desired size if needed.*
 
 ## Contributing
 
@@ -197,4 +210,4 @@ Contributions are welcome! If you'd like to improve the `Feature Navigator` pack
 
 ## Contact
 
-For inquiries or suggestions regarding the project, please contact us at [your.email@example.com](mailto:your.email@example.com)
+For inquiries or suggestions regarding the project, please contact us at [hin6150@gmail.com](mailto:hin6150@gmail.com).
