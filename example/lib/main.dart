@@ -11,10 +11,15 @@ class MyApp extends StatelessWidget {
   MyApp({super.key});
 
   final FeatureRouter _featureRouter = FeatureRouter(
-    apiKey: '',
+    apiKey: 'your-api-key',
     goRouter: GoRouter(
       initialLocation: '/account_management',
       routes: <RouteBase>[
+        GoRoute(
+          path: '/',
+          builder: (BuildContext context, GoRouterState state) =>
+              const HomeScreen(), // Replace with your home screen widget
+        ),
         StatefulShellRoute.indexedStack(
           builder: (BuildContext context, GoRouterState state,
               StatefulNavigationShell navigationShell) {
@@ -117,9 +122,57 @@ class MyApp extends StatelessWidget {
                     ),
                     FeatureRoute(
                       path: 'investments',
-                      name: 'Investments',
+                      name: 'investments',
                       description: 'Manage your investments',
                       builder: (context, state) => const InvestmentsScreen(),
+                      routes: [
+                        FeatureRoute(
+                          path: ':companyID',
+                          name: 'investment_company',
+                          description: 'Investment company details',
+                          parameters: const {
+                            'companyID': {
+                              '1': 'Company_A',
+                              '2': 'Company_B',
+                              '3': 'Company_C',
+                            },
+                          },
+                          builder: (context, state) {
+                            final companyID =
+                                state.pathParameters['companyID']!;
+                            final companyName = getCompanyNameById(companyID);
+                            return InvestmentCompanyPage(
+                                companyID: companyID, companyName: companyName);
+                          },
+                          routes: [
+                            FeatureRoute(
+                              path: ':action',
+                              name: 'investment_action',
+                              description: 'Buy or sell investments',
+                              parameters: const {
+                                'action': ['buy', 'sell'],
+                              },
+                              builder: (context, state) {
+                                final companyID =
+                                    state.pathParameters['companyID']!;
+                                final companyName =
+                                    getCompanyNameById(companyID);
+                                final action = state.pathParameters['action']!;
+                                return InvestmentActionPage(
+                                  companyID: companyID,
+                                  companyName: companyName,
+                                  action: action,
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    GoRoute(
+                      path: 'restricted_page',
+                      name: 'Restricted_Page',
+                      builder: (context, state) => const RestrictedScreen(),
                     ),
                   ],
                 ),
@@ -259,4 +312,13 @@ class MyApp extends StatelessWidget {
       routerConfig: _featureRouter.router,
     );
   }
+}
+
+String getCompanyNameById(String companyID) {
+  const companyMap = {
+    '1': 'Company_A',
+    '2': 'Company_B',
+    '3': 'Company_C',
+  };
+  return companyMap[companyID] ?? 'Unknown Company';
 }

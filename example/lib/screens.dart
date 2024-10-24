@@ -35,45 +35,47 @@ class AccountManagementScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Account Management')),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'AccountManagement',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const Text('Manage your account details and settings'),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => context.go('/account_management/details'),
-              child: const Text('View Account Details'),
-            ),
-            ElevatedButton(
-              onPressed: () => context.go('/account_management/open'),
-              child: const Text('Open a New Account'),
-            ),
-            ElevatedButton(
-              onPressed: () => context.go('/account_management/close'),
-              child: const Text('Close an Existing Account'),
-            ),
-            ElevatedButton(
-              onPressed: () => context.go('/account_management/savings'),
-              child: const Text('View Savings Account'),
-            ),
-            ElevatedButton(
-              onPressed: () => context.go('/account_management/loans'),
-              child: const Text('View Loan Options'),
-            ),
-            ElevatedButton(
-              onPressed: () => context.go('/account_management/investments'),
-              child: const Text('Manage Investments'),
-            ),
-            ElevatedButton(
-              onPressed: () =>
-                  context.go('/account_management/restricted_page'),
-              child: const Text('Restricted Page'),
-            ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'AccountManagement',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const Text('Manage your account details and settings'),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () => context.go('/account_management/details'),
+                child: const Text('View Account Details'),
+              ),
+              ElevatedButton(
+                onPressed: () => context.go('/account_management/open'),
+                child: const Text('Open a New Account'),
+              ),
+              ElevatedButton(
+                onPressed: () => context.go('/account_management/close'),
+                child: const Text('Close an Existing Account'),
+              ),
+              ElevatedButton(
+                onPressed: () => context.go('/account_management/savings'),
+                child: const Text('View Savings Account'),
+              ),
+              ElevatedButton(
+                onPressed: () => context.go('/account_management/loans'),
+                child: const Text('View Loan Options'),
+              ),
+              ElevatedButton(
+                onPressed: () => context.go('/account_management/investments'),
+                child: const Text('Manage Investments'),
+              ),
+              ElevatedButton(
+                onPressed: () =>
+                    context.go('/account_management/restricted_page'),
+                child: const Text('Restricted Page'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -297,16 +299,106 @@ class InvestmentsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Investments')),
-      body: const Center(
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
+            const Text(
               'Investments',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            Text('Manage your investments'),
+            const Text('Manage your investments'),
+            Column(
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    context.go('/account_management/investments/1');
+                  },
+                  child: const Text('Company Name A'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    context.go('/account_management/investments/2');
+                  },
+                  child: const Text('Company Name B'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    context.go('/account_management/investments/3');
+                  },
+                  child: const Text('Company Name C'),
+                ),
+              ],
+            )
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class InvestmentCompanyPage extends StatelessWidget {
+  final String companyID;
+  final String companyName;
+
+  const InvestmentCompanyPage({
+    super.key,
+    required this.companyID,
+    required this.companyName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('$companyName Investments'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Details about $companyName (ID: $companyID)'),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                context.go('/account_management/investments/$companyID/buy');
+              },
+              child: const Text('Buy'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                context.go('/account_management/investments/$companyID/sell');
+              },
+              child: const Text('Sell'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class InvestmentActionPage extends StatelessWidget {
+  final String companyID;
+  final String companyName;
+  final String action;
+
+  const InvestmentActionPage({
+    super.key,
+    required this.companyID,
+    required this.companyName,
+    required this.action,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${action.toUpperCase()} $companyName'),
+      ),
+      body: Center(
+        child: Text(
+          'Here you can ${action.toLowerCase()} shares of $companyName (ID: $companyID)',
         ),
       ),
     );

@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatHistoryService {
   static const String _chatMessagesKey = 'chat_messages';
-  static const int _maxMessages = 5;
+  static const int _maxMessages = 3;
 
   /// Saves a single chat message to SharedPreferences.
   ///

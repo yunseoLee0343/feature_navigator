@@ -104,8 +104,12 @@ class ChatPageState extends State<ChatPage>
 
         break;
       case 'Show me the screens I recently searched':
-        _addMessage('assistant',
-            'Here are the screens you recently searched. Is there any screen you want to go back to?');
+        _addMessage(
+            'assistant',
+            _savedChatMessages.isEmpty
+                ? 'It seems like you haven\'t searched for any screens yet.'
+                : "Here are the screens you recently searched. Is there any screen you would like to revisit?");
+
         _setChattingState(ChattingState.showHistory);
 
         break;
@@ -214,11 +218,17 @@ class ChatPageState extends State<ChatPage>
         children: [
           Expanded(child: _buildMessageList()),
           if (_isTyping) _buildTypingIndicator(),
-          Padding(
+          Container(
             padding: const EdgeInsets.only(right: 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: _buildActionButtons(),
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.2,
+            ),
+            child: SingleChildScrollView(
+              // Enable vertical scrolling
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: _buildActionButtons(),
+              ),
             ),
           ),
           _buildInputArea(),
@@ -274,7 +284,8 @@ class ChatPageState extends State<ChatPage>
                   onPressed: () {
                     Navigator.pop(context);
                     Navigator.pop(context);
-                    context.go(RouteDataProvider.getFullPath(routeInfo) ?? '/');
+                    context
+                        .push(RouteDataProvider.getFullPath(routeInfo) ?? '/');
                   },
                   text: routeInfo,
                 );
@@ -365,6 +376,7 @@ class ChatPageState extends State<ChatPage>
               decoration: const InputDecoration(
                 hintText: 'Enter message',
               ),
+              style: const TextStyle(fontFamily: 'Roboto', fontSize: 16),
               onSubmitted: (_) => _sendMessage(),
             ),
           ),
