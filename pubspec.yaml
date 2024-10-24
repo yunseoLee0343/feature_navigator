@@ -1,6 +1,6 @@
 name: feature_navigator
-description: "Navigator that detects feature of app."
-version: 0.0.2
+description: "Feature Navigator is a Flutter package that enhances your application's navigation by allowing users to search for specific features using a chatbot interface. It extends the capabilities of the `go_router` package by introducing `FeatureRoute`, which includes additional properties like `name`, `description`, and supports advanced features like dynamic parameters and multiple `extra` data entries for better route management and accessibility."
+version: 0.0.4
 homepage: https://github.com/yunseoLee0343/feature_navigator
 
 environment:

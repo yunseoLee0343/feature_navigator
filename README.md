@@ -2,15 +2,15 @@
 
 ## Overview
 
-**Feature Navigator** is a Flutter package that enhances your application's navigation by allowing users to search for specific features using a chatbot interface. It extends the capabilities of the `go_router` package by introducing `FeatureRoute`, which includes additional properties like `name` and `description` for better route management and accessibility.
+**Feature Navigator** is a Flutter package that enhances your application's navigation by allowing users to search for specific features using a chatbot interface. It extends the capabilities of the `go_router` package by introducing `FeatureRoute`, which includes additional properties like `name`, `description`, and supports advanced features like dynamic parameters and multiple `extra` data entries for better route management and accessibility.
 
 ## Features
 
 - **Easy Integration**: Seamlessly integrate with your existing Flutter app using `go_router`.
 - **ChatBot Interface**: Allows users to search for app functionalities via a chatbot.
 - **Extended Routing**: Use `FeatureRoute` to add `name`, `description`, and control chat appearance with `includeChat`.
+- **Dynamic Parameters and Extras**: Handle dynamic routes with path parameters and multiple `extra` data entries.
 - **Nested Routing Support**: Supports nested routes and `StatefulShellRoute`.
-- **Dynamic Routing**: Easily handle dynamic routes with path parameters.
 - **GPT Model Selection**: Optionally choose GPT models, with `gpt-4o-mini` as the default.
 - **Control Chat Visibility**: Use `includeChat` in `FeatureRoute` to show or hide the chat on specific pages.
 - **Fallback Compatibility**: Compatible with `GoRoute`; you can mix `GoRoute` and `FeatureRoute`.
@@ -92,33 +92,37 @@ FeatureRoute(
   name: 'settings',
   description: 'User settings page',
   path: '/settings',
-  includeChat: false, // Chat Button will not appear on this page
+  includeChat: false, // Chat will not appear on this page
   builder: (context, state) => const SettingsPage(),
 ),
 ```
 
 ### 3. Dynamic Routing with Path Parameters
 
-`FeatureRoute` makes it easy to handle dynamic routes. You can define path parameters using two methods:
+`FeatureRoute` makes it easy to handle dynamic routes. You can define path parameters and multiple `extra` data entries to create dynamic and flexible routing.
 
-#### Method 1: Using a Map for Parameter Values
+#### Defining Parameters
+
+Use the `parameters` property to define dynamic path parameters.
+
+##### Method 1: Using a Map for Parameter Values
 
 Use a `Map` where the key is the path parameter, and the value is another `Map` of possible path values to their display names.
 
 ```dart
 FeatureRoute(
-  path: ':companyID',
+  path: '/invest/:companyID',
   name: 'investment_company',
   description: 'Investment company details',
-  parameters: const {
+  parameters: {
     'companyID': {
-      '1': 'Company_A',
-      '2': 'Company_B',
-      '3': 'Company_C',
+      '1': 'CompanyA',
+      '2': 'CompanyB',
+      '3': 'CompanyC',
     },
   },
   builder: (context, state) {
-    final companyID = state.pathParameters['companyID']!;
+    final companyID = state.params['companyID']!;
     final companyName = getCompanyNameById(companyID);
     return InvestmentCompanyPage(
       companyID: companyID,
@@ -128,26 +132,105 @@ FeatureRoute(
 ),
 ```
 
-#### Method 2: Using a List for Parameter Values
+##### Method 2: Using a List for Parameter Values
 
 Use a `List` where the path parameter maps to a list of possible values.
 
 ```dart
 FeatureRoute(
-  path: ':action',
+  path: '/:action',
   name: 'investment_action',
   description: 'Buy or sell investments',
-  parameters: const {
+  parameters: {
     'action': ['buy', 'sell'],
   },
   builder: (context, state) {
-    final action = state.pathParameters['action']!;
+    final action = state.params['action']!;
     // ... your code ...
   },
 ),
 ```
 
-### 4. Mixing `FeatureRoute` with `GoRoute`
+### 4. Using `extras` for Additional Data
+
+`FeatureRoute` supports passing additional data using the `extras` property. This allows you to define multiple `extra` data entries for a route, similar to how parameters are handled.
+
+#### Defining Multiple `extras`
+
+Use the `extras` property, which is a `Map` where each key corresponds to a unique `extra` data entry.
+
+```dart
+FeatureRoute(
+  path: 'transactions',
+  name: 'transactions',
+  description: 'Transactions Page',
+  builder: (context, state) {
+    final info = state.extra?['info'];
+    return TransactionsPage(info: info);
+  },
+  extras: {
+    'Transaction A': {'info': 'Additional Data 1'},
+    'Transaction B': {'info': 'Additional Data 2'},
+    // ... more entries ...
+  },
+),
+```
+
+#### How It Works
+
+- **Route Generation**: The `RouteDataProvider` will generate routes for each combination of parameters and `extras`.
+- **Adjusted Route Names**: Route names and descriptions will include the `extra` key to uniquely identify each route.
+- **Navigation**: When navigating to these routes, the corresponding `extra` data will be passed along via `state.extra`.
+
+#### Example with Parameters and `extras`
+
+```dart
+FeatureRoute(
+  path: 'investments/:companyID',
+  name: 'investment',
+  description: 'Investment Page',
+  parameters: {
+    'companyID': {
+      '1': 'CompanyA',
+      '2': 'CompanyB',
+    },
+  },
+  extras: {
+    'Transaction A': {'info': 'Additional Data 1'},
+    'Transaction B': {'info': 'Additional Data 2'},
+  },
+  builder: (context, state) {
+    final companyID = state.params['companyID']!;
+    final companyName = getCompanyNameById(companyID);
+    final info = state.extra?['info'];
+    return InvestmentPage(
+      companyID: companyID,
+      companyName: companyName,
+      info: info,
+    );
+  },
+),
+```
+
+**Generated Route Names:**
+
+- `investment_CompanyA_Transaction A`
+- `investment_CompanyA_Transaction B`
+- `investment_CompanyB_Transaction A`
+- `investment_CompanyB_Transaction B`
+
+### 5. Accessing `extra` Data in the Builder
+
+In your route's `builder` function, you can access the `extra` data via `state.extra`.
+
+```dart
+builder: (context, state) {
+  final info = (state.extra as Map<String, dynamic>?)?['info'];
+  return SomePage(info: info);
+},
+```
+
+### 7. Mixing `FeatureRoute` with `GoRoute`
 
 Since `FeatureRoute` extends `GoRoute`, you can still declare routes using `GoRoute`. However, be aware that the chatbot functionality provided by `Feature Navigator` cannot access routes defined with `GoRoute`. To utilize the chatbot features fully, it's recommended to use `FeatureRoute`.
 
@@ -166,6 +249,7 @@ routes: [
 ## Important Notes
 
 - **ChatBot Accessibility**: The chatbot in `Feature Navigator` can only access routes defined with `FeatureRoute`. Routes defined with `GoRoute` will not be accessible via the chatbot interface.
+- **Unique Route Names**: When using parameters and `extras`, route names are automatically adjusted to include parameter values and `extra` keys to ensure uniqueness.
 - **Compatibility**: Since `FeatureRoute` extends `GoRoute`, you can use both in your application without any issues.
 - **Chat Visibility Control**: Use `includeChat: false` in `FeatureRoute` to hide the chat on specific pages.
 
@@ -174,8 +258,6 @@ routes: [
 | [![Developer 1](https://avatars.githubusercontent.com/u/117894155?v=4?s=150)](https://github.com/yunseoLee0343) | [![Developer 2](https://avatars.githubusercontent.com/u/3265750?v=4?s=150)](https://github.com/hin6150) |
 | :-------------------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------: |
 |                         [@yunseoLee0343](https://github.com/yunseoLee0343)                         |                         [@hin6150](https://github.com/hin6150)                         |
-
-*Note: The images are resized to maintain appropriate dimensions. Replace `?s=150` with the desired size if needed.*
 
 ## Contributing
 

@@ -12,6 +12,7 @@ class FeatureRoute extends GoRoute {
   final String description;
   final bool includeChat;
   final Map<String, dynamic> parameters;
+  final Map<String, Map<String, dynamic>> extras;
 
   FeatureRoute({
     required this.description,
@@ -23,6 +24,7 @@ class FeatureRoute extends GoRoute {
     super.pageBuilder,
     super.redirect,
     super.routes = const <RouteBase>[],
+    this.extras = const {},
   }) : super(
           builder: (context, state) {
             final child = builder(context, state);

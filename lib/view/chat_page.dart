@@ -19,7 +19,10 @@ class ChatPageState extends State<ChatPage>
     with SingleTickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final List<Map<String, String>> _messages = [];
+
+  // Updated the type to allow dynamic values (e.g., extra data)
+  final List<Map<String, dynamic>> _messages = [];
+
   late GPTService _gptService;
   late AnimationController _animationController;
   ChattingState _chatPageState = ChattingState.listView;
@@ -121,13 +124,21 @@ class ChatPageState extends State<ChatPage>
           final found = result['found'] as bool;
           final routeName = result['route_name'] as String?;
 
-          String? path;
-          if (found && routeName != null) {
-            path = RouteDataProvider.getFullPath(routeName);
-          }
-
           _addMessage('assistant', assistantMessage);
-          if (path != null) _addMessage('link', path);
+
+          if (found && routeName != null) {
+            final routeData = RouteDataProvider.getRouteData(routeName);
+            if (routeData != null) {
+              final path = routeData.fullPath;
+              final extra = routeData.extra;
+
+              // Include path and extra data when adding the link message
+              _addMessage('link', 'Go to screen', {
+                'path': path,
+                'extra': extra,
+              });
+            }
+          }
 
           await ChatHistoryService.saveMessage(message);
           _loadSavedChatMessages();
@@ -140,9 +151,15 @@ class ChatPageState extends State<ChatPage>
     _setTyping(false);
   }
 
-  void _addMessage(String role, String content) {
+  // Updated to accept additionalData for extra parameters
+  void _addMessage(String role, dynamic content,
+      [Map<String, dynamic>? additionalData]) {
     setState(() {
-      _messages.add({'role': role, 'content': content});
+      final message = {'role': role, 'content': content};
+      if (additionalData != null) {
+        message.addAll(additionalData);
+      }
+      _messages.add(message);
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollController.animateTo(
@@ -284,8 +301,13 @@ class ChatPageState extends State<ChatPage>
                   onPressed: () {
                     Navigator.pop(context);
                     Navigator.pop(context);
-                    context
-                        .push(RouteDataProvider.getFullPath(routeInfo) ?? '/');
+
+                    final routeData = RouteDataProvider.getRouteData(routeInfo);
+                    final path = routeData?.fullPath ?? '/';
+                    final extra = routeData?.extra;
+
+                    // Navigate with extra data
+                    context.push(path, extra: extra);
                   },
                   text: routeInfo,
                 );
@@ -312,15 +334,14 @@ class ChatPageState extends State<ChatPage>
           children: [
             GestureDetector(
               onTap: () {
-                final String currentRoute = GoRouter.of(context)
-                    .routerDelegate
-                    .currentConfiguration
-                    .last
-                    .matchedLocation
-                    .toString();
+                if (isLink) {
+                  final String path = message['path'];
+                  final dynamic extra = message['extra'];
+                  Navigator.pop(context);
 
-                if (isLink) context.go(message['content']!);
-                if (currentRoute == message['content']!) Navigator.pop(context);
+                  // Navigate with extra data
+                  context.push(path, extra: extra);
+                }
               },
               child: Container(
                 padding:
@@ -346,7 +367,7 @@ class ChatPageState extends State<ChatPage>
                   ),
                 ),
                 child: Text(
-                  isLink ? "Go to screen" : message['content']!,
+                  message['content'] as String,
                   style: TextStyle(
                     color: isUser
                         ? const Color(0xFF1777E9)

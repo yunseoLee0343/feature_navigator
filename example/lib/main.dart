@@ -11,14 +11,14 @@ class MyApp extends StatelessWidget {
   MyApp({super.key});
 
   final FeatureRouter _featureRouter = FeatureRouter(
-    apiKey: 'your-api-key',
+    apiKey: 'your-gpt-api-key',
     goRouter: GoRouter(
       initialLocation: '/account_management',
       routes: <RouteBase>[
         GoRoute(
           path: '/',
           builder: (BuildContext context, GoRouterState state) =>
-              const HomeScreen(), // Replace with your home screen widget
+              const HomeScreen(),
         ),
         StatefulShellRoute.indexedStack(
           builder: (BuildContext context, GoRouterState state,
@@ -81,9 +81,17 @@ class MyApp extends StatelessWidget {
                             FeatureRoute(
                               path: 'details',
                               name: 'TransactionDetails',
+                              extras: const {
+                                "Transaction A": {'info': 'Additional Data A'},
+                                "Transaction B": {'info': 'Additional Data B'},
+                              },
                               description: 'Details of a specific transaction',
-                              builder: (context, state) =>
-                                  const TransactionDetailsScreen(),
+                              builder: (context, state) {
+                                final extraData = (state.extra
+                                    as Map<String, dynamic>?)?['info'];
+                                return TransactionDetailsScreen(
+                                    extraData: extraData);
+                              },
                             ),
                           ],
                         ),
@@ -152,16 +160,25 @@ class MyApp extends StatelessWidget {
                               parameters: const {
                                 'action': ['buy', 'sell'],
                               },
+                              extras: const {
+                                "price 100": {"input": 100},
+                                "price 200": {"input": 200},
+                                "": {}
+                              },
                               builder: (context, state) {
                                 final companyID =
                                     state.pathParameters['companyID']!;
                                 final companyName =
                                     getCompanyNameById(companyID);
                                 final action = state.pathParameters['action']!;
+                                final extraData = (state.extra
+                                    as Map<String, dynamic>?)?['input'];
+
                                 return InvestmentActionPage(
                                   companyID: companyID,
                                   companyName: companyName,
                                   action: action,
+                                  price: extraData,
                                 );
                               },
                             ),
@@ -310,6 +327,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       routerConfig: _featureRouter.router,
+      theme: ThemeData(
+        textTheme: Theme.of(context).textTheme.apply(
+              fontSizeFactor: 1.0,
+              fontSizeDelta: 2.0,
+            ),
+      ),
     );
   }
 }

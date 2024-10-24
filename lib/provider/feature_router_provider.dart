@@ -9,7 +9,7 @@ class RouteDataProvider {
 
   static void initializeRoutes(List<RouteBase> routes) {
     _routeDataMap.clear();
-    _traverseRoutes(routes, '', _routeDataMap, {});
+    _traverseRoutes(routes, '', _routeDataMap, {}, {});
   }
 
   static List<String> getAllRouteNames() => _routeDataMap.keys.toList();
@@ -19,21 +19,45 @@ class RouteDataProvider {
 
   static String? getFullPath(String name) => _routeDataMap[name]?.fullPath;
 
+  static FeatureRouteData? getRouteData(String name) => _routeDataMap[name];
+
   static void _traverseRoutes(
     List<RouteBase> routes,
     String parentPath,
     Map<String, FeatureRouteData> routeDataMap,
     Map<String, dynamic> parentParameters,
+    Map<String, dynamic> parentExtras,
   ) {
     for (final route in routes) {
       if (route is FeatureRoute) {
         final path = _combinePaths(parentPath, route.path);
 
         if (route.name != null) {
-          if (route.parameters.isEmpty) {
-            // No parameters for this route, use parentParameters
+          final parameterNames = route.parameters.keys.toList();
+          final parameterValuesList =
+              route.parameters.values.toList(); // List of dynamic values
+
+          final hasParameters = parameterNames.isNotEmpty;
+          final hasExtras = route.extras.isNotEmpty;
+
+          // Generate all combinations of parameter values
+          final parameterCombinations =
+              hasParameters ? _generateCombinations(parameterValuesList) : [[]];
+
+          // For each parameter combination
+          for (final parameterCombination in parameterCombinations) {
+            // Create a map from parameter name to value
+            final parameterMap = <String, dynamic>{};
+            for (int i = 0; i < parameterNames.length; i++) {
+              parameterMap[parameterNames[i]] = parameterCombination[i];
+            }
+
+            // Merge with parent parameters
+            final allParameters = {...parentParameters, ...parameterMap};
+
+            // Replace the path parameters with actual IDs
             String adjustedFullPath = path;
-            parentParameters.forEach((paramName, paramValue) {
+            allParameters.forEach((paramName, paramValue) {
               final id = paramValue is Map<String, dynamic> &&
                       paramValue.containsKey('id')
                   ? paramValue['id']
@@ -41,64 +65,60 @@ class RouteDataProvider {
               adjustedFullPath = adjustedFullPath.replaceAll(':$paramName', id);
             });
 
-            String adjustedName = route.name!;
-            String adjustedDescription = route.description;
+            // Now, process extras
+            if (hasExtras) {
+              // For each extra entry
+              route.extras.forEach((extraKey, extraValue) {
+                // Merge with parent extras
+                final allExtras = {...parentExtras, ...extraValue};
 
-            // Adjust the name and description with parent parameters
-            parentParameters.forEach((paramName, paramValue) {
-              final displayName = paramValue is Map<String, dynamic> &&
-                      paramValue.containsKey('name')
-                  ? paramValue['name']
-                  : paramValue.toString();
-              adjustedName += '_$displayName';
-              adjustedDescription += ' ($paramName: $displayName)';
-            });
+                // Adjust the name and description
+                String adjustedName = route.name!;
+                String adjustedDescription = route.description;
 
-            // Add to routeDataMap
-            routeDataMap[adjustedName] = FeatureRouteData(
-              name: adjustedName,
-              description: adjustedDescription,
-              fullPath: adjustedFullPath,
-            );
+                // Include parameter display names
+                allParameters.forEach((paramName, paramValue) {
+                  final displayName = paramValue is Map<String, dynamic> &&
+                          paramValue.containsKey('name')
+                      ? paramValue['name']
+                      : paramValue.toString();
+                  adjustedName += '_$displayName';
+                  adjustedDescription += ' ($paramName: $displayName)';
+                });
 
-            // Process nested routes with the same parameters
-            if (route.routes.isNotEmpty) {
-              _traverseRoutes(
-                  route.routes, path, routeDataMap, parentParameters);
-            }
-          } else {
-            // Route has parameters
-            final parameterNames = route.parameters.keys.toList();
-            final parameterValuesList =
-                route.parameters.values.toList(); // List of dynamic values
+                // Include extraKey in adjustedName and adjustedDescription
+                adjustedName += '_$extraKey';
+                adjustedDescription += ' (Extra: $extraKey)';
 
-            // Generate all combinations of parameter values
-            final combinations = _generateCombinations(parameterValuesList);
+                // Add to routeDataMap
+                routeDataMap[adjustedName] = FeatureRouteData(
+                  name: adjustedName,
+                  description: adjustedDescription,
+                  fullPath: adjustedFullPath,
+                  extra: allExtras,
+                );
 
-            for (final combination in combinations) {
-              // Create a map from parameter name to value
-              final parameterMap = <String, dynamic>{};
-              for (int i = 0; i < parameterNames.length; i++) {
-                parameterMap[parameterNames[i]] = combination[i];
-              }
-
-              // Merge with parent parameters
-              final allParameters = {...parentParameters, ...parameterMap};
-
-              // Replace the path parameters with actual IDs
-              String adjustedFullPath = path;
-              allParameters.forEach((paramName, paramValue) {
-                final id = paramValue is Map<String, dynamic> &&
-                        paramValue.containsKey('id')
-                    ? paramValue['id']
-                    : paramValue.toString();
-                adjustedFullPath =
-                    adjustedFullPath.replaceAll(':$paramName', id);
+                // Process nested routes with updated parameters and extras
+                if (route.routes.isNotEmpty) {
+                  _traverseRoutes(
+                    route.routes,
+                    path,
+                    routeDataMap,
+                    allParameters,
+                    allExtras,
+                  );
+                }
               });
+            } else {
+              // No extras, proceed as before
+              // Merge with parent extras
+              final allExtras = {...parentExtras, ...route.extras};
 
-              // Adjust the name and description using display names
+              // Adjust the name and description
               String adjustedName = route.name!;
               String adjustedDescription = route.description;
+
+              // Include parameter display names
               allParameters.forEach((paramName, paramValue) {
                 final displayName = paramValue is Map<String, dynamic> &&
                         paramValue.containsKey('name')
@@ -113,26 +133,43 @@ class RouteDataProvider {
                 name: adjustedName,
                 description: adjustedDescription,
                 fullPath: adjustedFullPath,
+                extra: allExtras,
               );
 
-              // Process nested routes with updated parameters
+              // Process nested routes with updated parameters and extras
               if (route.routes.isNotEmpty) {
                 _traverseRoutes(
-                    route.routes, path, routeDataMap, allParameters);
+                  route.routes,
+                  path,
+                  routeDataMap,
+                  allParameters,
+                  allExtras,
+                );
               }
             }
           }
         } else {
           // If route.name is null, just process nested routes
           if (route.routes.isNotEmpty) {
-            _traverseRoutes(route.routes, path, routeDataMap, parentParameters);
+            _traverseRoutes(
+              route.routes,
+              path,
+              routeDataMap,
+              parentParameters,
+              parentExtras,
+            );
           }
         }
       } else if (route is ShellRoute) {
         // For ShellRoute, path is the same as parentPath
         if (route.routes.isNotEmpty) {
           _traverseRoutes(
-              route.routes, parentPath, routeDataMap, parentParameters);
+            route.routes,
+            parentPath,
+            routeDataMap,
+            parentParameters,
+            parentExtras,
+          );
         }
       } else if (route is StatefulShellRoute) {
         // Handle StatefulShellRoute
@@ -140,7 +177,12 @@ class RouteDataProvider {
           for (final branch in route.branches) {
             if (branch.routes.isNotEmpty) {
               _traverseRoutes(
-                  branch.routes, parentPath, routeDataMap, parentParameters);
+                branch.routes,
+                parentPath,
+                routeDataMap,
+                parentParameters,
+                parentExtras,
+              );
             }
           }
         }

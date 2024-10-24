@@ -136,9 +136,24 @@ class TransactionsScreen extends StatelessWidget {
             const Text('View and manage account transactions'),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () => context
-                  .go('/account_management/details/transactions/details'),
+              onPressed: () => context.go(
+                '/account_management/details/transactions/details',
+              ),
               child: const Text('View Transaction Details'),
+            ),
+            ElevatedButton(
+              onPressed: () => context.go(
+                '/account_management/details/transactions/details',
+                extra: {'info': 'Additional Data A'},
+              ),
+              child: const Text('View Transaction Details with extra A'),
+            ),
+            ElevatedButton(
+              onPressed: () => context.go(
+                '/account_management/details/transactions/details',
+                extra: {'info': 'Additional Data B'},
+              ),
+              child: const Text('View Transaction Details with extra B'),
             ),
           ],
         ),
@@ -149,21 +164,23 @@ class TransactionsScreen extends StatelessWidget {
 
 // TransactionDetailsScreen
 class TransactionDetailsScreen extends StatelessWidget {
-  const TransactionDetailsScreen({super.key});
+  final String? extraData;
+  const TransactionDetailsScreen({super.key, this.extraData});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Transaction Details')),
-      body: const Center(
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
+            const Text(
               'TransactionDetails',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            Text('Details of a specific transaction'),
+            Text('Extra Data: $extraData'),
+            const Text('Details of a specific transaction'),
           ],
         ),
       ),
@@ -367,9 +384,37 @@ class InvestmentCompanyPage extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () {
+                context.go('/account_management/investments/$companyID/buy',
+                    extra: {"input": 100});
+              },
+              child: const Text('Buy \$100'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                context.go('/account_management/investments/$companyID/buy',
+                    extra: {"input": 200});
+              },
+              child: const Text('Buy \$200'),
+            ),
+            ElevatedButton(
+              onPressed: () {
                 context.go('/account_management/investments/$companyID/sell');
               },
               child: const Text('Sell'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                context.go('/account_management/investments/$companyID/sell',
+                    extra: {"input": 100});
+              },
+              child: const Text('Sell \$100'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                context.go('/account_management/investments/$companyID/sell',
+                    extra: {"input": 200});
+              },
+              child: const Text('Sell \$200'),
             ),
           ],
         ),
@@ -382,12 +427,14 @@ class InvestmentActionPage extends StatelessWidget {
   final String companyID;
   final String companyName;
   final String action;
+  final int? price;
 
   const InvestmentActionPage({
     super.key,
     required this.companyID,
     required this.companyName,
     required this.action,
+    this.price,
   });
 
   @override
@@ -398,7 +445,7 @@ class InvestmentActionPage extends StatelessWidget {
       ),
       body: Center(
         child: Text(
-          'Here you can ${action.toLowerCase()} shares of $companyName (ID: $companyID)',
+          'Here you can ${action.toLowerCase()} shares of $companyName (ID: $companyID)\nwith price \$$price',
         ),
       ),
     );
