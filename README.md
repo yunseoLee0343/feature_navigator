@@ -2,17 +2,199 @@
 
 ## Overview
 
-**Feature Navigator**는 ChatBot 형태로 애플리케이션 내에서 특정 기능을 검색하고, 가장 유사한 가이드를 제공하는 패키지입니다. 사용자가 입력한 문장을 키워드로 분석하여, 해당 키워드와 관련된 가이드를 최대 3개까지 표시합니다. 가이드는 Coach Mark와 스포트라이트된 위젯 및 팝오버 형태로 제공되어 사용자에게 직관적이고 효과적인 가이드 경험을 제공합니다.
+**Feature Navigator** is a Flutter package that enhances your application's navigation by allowing users to search for specific features using a chatbot interface. It extends the capabilities of the `go_router` package by introducing `FeatureRoute`, which includes additional properties like `name` and `description` for better route management and accessibility.
 
 ## Features
 
-- **ChatBot Interface**: 사용자와의 대화형 인터페이스를 통해 기능 검색이 가능합니다.
-- **Keyword Extraction**: 사용자가 입력한 문장에서 키워드를 추출하여 적합한 가이드를 찾습니다.
-- **Guide Presentation**: 최대 3개의 가장 유사한 가이드를 Coach Mark와 팝오버 형식으로 제공합니다.
-- **Spotlight and Popover Guides**: 특정 위젯을 강조(스포트라이트)하고, 관련 설명을 팝오버로 표시하여 사용자가 필요한 정보를 바로 확인할 수 있도록 합니다.
+- **Easy Integration**: Seamlessly integrate with your existing Flutter app using `go_router`.
+- **ChatBot Interface**: Allows users to search for app functionalities via a chatbot.
+- **Extended Routing**: Use `FeatureRoute` to add `name` and `description` to your routes.
+- **Nested Routing Support**: Supports nested routes and `StatefulShellRoute`.
+- **Dynamic Routing**: Easily handle dynamic routes with path parameters.
+- **GPT Model Selection**: Optionally choose GPT models, with `gpt-4o-mini` as the default.
+- **Fallback Compatibility**: Compatible with `GoRoute`; you can mix `GoRoute` and `FeatureRoute`.
 
 ## Installation
 
+Add the `feature_navigator` package to your project:
+
 ```bash
-dart pub add feature_navigator
+flutter pub add feature_navigator
 ```
+
+## Usage
+
+### 1. Setting Up the Router
+
+In your `main.dart` or wherever you set up your router, declare the `FeatureRouter` as follows:
+
+```dart
+FeatureRouter(
+  goRouter: router,
+  apiKey: 'your-gpt-api-key', 
+  gptModel: GPTModel.gpt4oMini, // Optional, defaults to gpt-4o-mini
+);
+```
+
+#### Selecting GPT Models
+
+You can optionally choose the GPT model to use. The default is `gpt-4o-mini`. Available models are:
+
+```dart
+enum GPTModel {
+  gpt4o('gpt-4o'),
+  gpt4('gpt-4'),
+  gpt4oMini('gpt-4o-mini');
+
+  final String modelName;
+
+  const GPTModel(this.modelName);
+}
+```
+
+Set the `gptModel` parameter when initializing `FeatureRouter`:
+
+```dart
+FeatureRouter(
+  goRouter: router,
+  apiKey: 'your-gpt-api-key',
+  gptModel: GPTModel.gpt4, // Optional, Choose the desired model
+);
+```
+
+### 2. Defining Routes with `FeatureRoute`
+
+Within your `GoRouter`, use `FeatureRoute` instead of `GoRoute` to define your routes. This allows you to add additional metadata like `name` and `description` for each route.
+
+```dart
+final GoRouter router = GoRouter(
+  routes: [
+    FeatureRoute(
+      name: 'main',
+      description: 'The main page where users can see an overview or access various features.',
+      path: '/',
+      builder: (context, state) => const MainPage(),
+    ),
+    // Additional routes...
+  ],
+);
+```
+
+#### Note
+
+- When using `FeatureRoute`, you **must** provide the `name` and `description` parameters.
+- `FeatureRoute` supports nested routing and `StatefulShellRoute`.
+
+### 3. Dynamic Routing with Path Parameters
+
+`FeatureRoute` makes it easy to handle dynamic routes. You can define path parameters using two methods:
+
+#### Method 1: Using a Map for Parameter Values
+
+Use a `Map` where the key is the path parameter, and the value is another `Map` of possible path values to their display names.
+
+```dart
+FeatureRoute(
+  path: ':companyID',
+  name: 'investment_company',
+  description: 'Investment company details',
+  parameters: const {
+    'companyID': {
+      '1': 'Company_A',
+      '2': 'Company_B',
+      '3': 'Company_C',
+    },
+  },
+  builder: (context, state) {
+    final companyID = state.pathParameters['companyID']!;
+    final companyName = getCompanyNameById(companyID);
+    return InvestmentCompanyPage(
+      companyID: companyID,
+      companyName: companyName,
+    );
+  },
+),
+```
+
+#### Method 2: Using a List for Parameter Values
+
+Use a `List` where the path parameter maps to a list of possible values.
+
+```dart
+FeatureRoute(
+  path: ':action',
+  name: 'investment_action',
+  description: 'Buy or sell investments',
+  parameters: const {
+    'action': ['buy', 'sell'],
+  },
+  builder: (context, state) {
+    final action = state.pathParameters['action']!;
+    // ... your code ...
+  },
+),
+```
+
+### 4. Mixing `FeatureRoute` with `GoRoute`
+
+Since `FeatureRoute` extends `GoRoute`, you can still declare routes using `GoRoute`. However, be aware that the chatbot functionality provided by `Feature Navigator` cannot access routes defined with `GoRoute`. To utilize the chatbot features fully, it's recommended to use `FeatureRoute`.
+
+```dart
+routes: [
+  FeatureRoute(
+    // ... FeatureRoute definitions ...
+  ),
+  GoRoute(
+    path: '/settings',
+    builder: (context, state) => const SettingsPage(),
+  ),
+],
+```
+
+## Important Notes
+
+- **ChatBot Accessibility**: The chatbot in `Feature Navigator` can only access routes defined with `FeatureRoute`. Routes defined with `GoRoute` will not be accessible via the chatbot interface.
+- **Compatibility**: Since `FeatureRoute` extends `GoRoute`, you can use both in your application without any issues.
+
+## Developers
+
+- [@yunseoLee0343](https://github.com/yunseoLee0343)
+- [@hin6150](https://github.com/hin6150)
+
+![Developer 1](https://avatars.githubusercontent.com/u/117894155?v=4)
+![Developer 2](https://avatars.githubusercontent.com/u/3265750?v=4)
+
+## Contributing
+
+Contributions are welcome! If you'd like to improve the `Feature Navigator` package or fix bugs, please submit a pull request. We recommend creating an issue or discussing your changes beforehand to share your ideas.
+
+### How to Contribute
+
+1. **Fork the Repository**: Create a fork of this repository.
+2. **Create a Branch**: Create a new branch for your feature or bug fix.
+
+   ```bash
+   git checkout -b feature/new-feature
+   ```
+
+3. **Commit Your Changes**: Commit your changes with descriptive messages.
+
+   ```bash
+   git commit -m "Add new feature"
+   ```
+
+4. **Push to the Branch**: Push your changes to the branch.
+
+   ```bash
+   git push origin feature/new-feature
+   ```
+
+5. **Open a Pull Request**: Create a pull request on GitHub.
+
+## License
+
+`Feature Navigator` is distributed under the MIT License. See the [LICENSE](LICENSE) file for more information.
+
+## Contact
+
+For inquiries or suggestions regarding the project, please contact us at [your.email@example.com](mailto:your.email@example.com)
